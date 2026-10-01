@@ -1,0 +1,170 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Akash Candel Billing</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#fbf5ea;--card:#fff;--ink:#3a2a1a;--acc:#b5651d;--bd:#e3d3b8;--blue:#1e4a8c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1812;--card:#2a231a;--ink:#f1e6d3;--bd:#4a3d2c;--acc:#e0954a}}
+*{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--acc);color:#fff;padding:12px 16px}header h1{margin:0;font-size:20px}header small{opacity:.9}
+nav{display:flex;gap:6px;overflow-x:auto;padding:8px;background:var(--card);border-bottom:1px solid var(--bd)}
+button,.b{min-height:42px;padding:8px 14px;border:1px solid var(--acc);background:var(--card);color:var(--ink);border-radius:8px;font-size:14px;cursor:pointer;white-space:nowrap}
+button.p,nav button.on{background:var(--acc);color:#fff}button.d{border-color:#b00;color:#b00}
+main{padding:12px;max-width:1000px;margin:auto}.v{display:none}.v.on{display:block}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.grid .card{text-align:center}.grid b{display:block;font-size:28px;color:var(--acc)}
+input,select{min-height:40px;padding:6px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--ink);font-size:14px;max-width:100%}
+.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.f label{display:flex;flex-direction:column;gap:3px;font-size:12px}
+.w{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{border:1px solid var(--bd);padding:5px;text-align:left}th{background:var(--bg)}td.r{text-align:right}
+#bt td:nth-child(2){min-width:330px}#bt input[type=number]{width:90px}.row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.tot{text-align:right;line-height:1.8}.tot big{font-size:22px;color:var(--acc)}
+dialog{max-width:96vw;width:640px;border:0;border-radius:10px;padding:0;background:#fff;color:#000}
+.sheet{font:12px serif;color:var(--blue);background:#fff;padding:14px;border:2px solid var(--blue);width:100%}
+.sheet h2{margin:2px 0;text-align:center;font:900 26px Arial,sans-serif}.sheet p{margin:2px;text-align:center}.sheet table{color:var(--blue)}.sheet th,.sheet td{border:1px solid var(--blue);background:#fff;padding:2px 4px;font-size:12px}
+.sheet .l{border-bottom:1px dotted var(--blue);padding:3px 0}
+#pa{display:none}
+@media print{body>*{display:none!important}#pa{display:block!important}#pa .sheet{font-size:13px}}
+</style></head><body>
+<header><h1>AKASH CANDEL</h1><small>Digital Billing System · 2026</small></header>
+<nav id="nav"></nav>
+<main>
+<section class="v" id="v-dash"><div class="grid" id="cards"></div></section>
+
+<section class="v" id="v-bill"><div class="card"><h3 style="margin-top:0">AKASH CANDEL 2026 — <span id="mode">New Bill</span></h3>
+<div class="f"><label>Date<input type="date" id="bd"></label><label>Customer Name<input id="bn"></label><label>Address<input id="ba"></label><label>Bill No.<input id="bno"></label></div></div>
+<div class="card w"><table id="bt"><thead><tr><th>SL NO.</th><th>PARTICULARS</th><th>PACKET</th><th>RATE (₹)</th><th>AMOUNT (₹)</th></tr></thead><tbody></tbody></table>
+<div class="row"><button class="p" onclick="addRow()">+ ADD ITEM</button><button onclick="remRow()">REMOVE ITEM</button><button class="d" onclick="clearBill()">CLEAR BILL</button></div></div>
+<div class="card"><div class="f"><label>Discount %<input type="number" min="0" step="any" id="disc" value="0"></label><label>GST %<input type="number" min="0" step="any" id="gst" value="0"></label></div>
+<div class="tot" id="tot"></div>
+<div class="row"><button onclick="calc()">CALCULATE TOTAL</button><button class="p" onclick="saveBill()">SAVE BILL</button><button onclick="printBill(cur())">PRINT BILL</button><button onclick="pdfBill(cur())">DOWNLOAD PDF</button></div></div></section>
+
+<section class="v" id="v-prod"><div class="card"><h3 style="margin-top:0" id="pft">Add Product</h3><div class="f">
+<label>Category<select id="pc"><option>WHITE CANDLE</option><option>COLOUR CANDLE</option><option>DESIGN CANDLE</option></select></label>
+<label>Product<input id="pn"></label><label>Weight<input id="pw"></label><label>Price (₹)<input id="pp" type="number" step="0.01" min="0"></label></div>
+<div class="row"><button class="p" onclick="saveProd()">SAVE PRODUCT</button><button onclick="resetProd()">CANCEL</button></div></div>
+<div class="card"><input id="ps" placeholder="Search products…" oninput="renderProd()" style="width:100%"><div class="w"><table id="pt"></table></div></div></section>
+
+<section class="v" id="v-price"><div class="row" id="ptabs"></div><div class="card"><div id="plh" style="font-weight:700;margin-bottom:6px"></div><div class="w"><table id="plt"></table></div>
+<div class="row"><button onclick="window.print()" id="ppr">PRINT PRICE LIST</button><button class="p" onclick="pricePdf()">DOWNLOAD PRICE LIST PDF</button></div></div></section>
+
+<section class="v" id="v-hist"><div class="card"><input id="hs" placeholder="Search bill no. or customer…" oninput="renderHist()" style="width:100%"><div class="w"><table id="ht"></table></div></div></section>
+
+<section class="v" id="v-set"><div class="card"><div class="f">
+<label>Business Name<input id="s1"></label><label>Address<input id="s2"></label><label>Phone Number<input id="s3"></label><label>Bill Prefix<input id="s4"></label>
+<label>Default Price (custom items)<input id="s5" type="number" step="0.01"></label><label>Invoice Footer<input id="s6"></label></div>
+<div class="row"><button class="p" onclick="saveSet()">SAVE SETTINGS</button></div></div></section>
+</main>
+<dialog id="dlg"><div id="dv" style="padding:10px"></div><div class="row" style="padding:0 10px 10px"><button onclick="printBill(vb)">PRINT</button><button class="p" onclick="pdfBill(vb)">DOWNLOAD PDF</button><button onclick="dlg.close()">CLOSE</button></div></dialog>
+<div id="pa"></div>
+<script>
+const W=[["40/6","375gm",82.5],["32/6","290gm",63.8],["26/6","218gm",48],["22/6","175gm",37.4],["18/6","125gm",27.5],["16/6","100gm",22],["15/6","75gm",16.5],["MARVEL BOX","100gm",22],["VICTORIYA","118gm",26],["20 PENCIL","130gm",28.5],["13/10","67gm",15],["BIRTHDAY","100gm",22],["15/10","70gm",15.4],["10/12 RED","50gm",11],["20/12","60gm",13.2],["10/12 BLU","33gm",7.25]];
+const C=[["26/5 COLOUR","175gm",40.25],["22/6 COLOUR","160gm",36.8],["18/5 COLOUR","118gm",27.1],["DRUMPHY","86gm",19.8],["8 PC DRUMPHY","115gm",26.5],["NEW DRUMPHY BOX","125gm",28.75],["8 PC NEW DRUMPHY","150gm",34.5],["MARVEL","100gm",23],["8 PC MARVEL","80gm",18.4],["6 PC MARVEL","60gm",13.8],["11 PC COLOUR","50gm",11.5],["9 PC COLOUR","42gm",9.65],["8 PC COLOUR","38gm",8.7],["13 PC COLOUR","36gm",8.25],["10 PC COLOUR","30gm",6.9],["14 PC PENCIL","86gm",19.8],["9 PC PENCIL","60gm",13.8],["8 PC PENCIL","50gm",11.5],["15/6 COLOUR","70gm",16.1]];
+const G=[["TEA LIGHT","10 PC",35],["PAPER BOX CANDEL","16 PC",28],["SPIRAL BOX","115gm",27.5],["CHESE 5 PC","75gm",18],["BULLET 10 PC","50gm",12.5],["STAND RING","1kg",250],["STAND RING","500gm",125],["STAND RING","220gm",53],["STAND FAT","150gm",36],["STAND SIX CUT","120gm",30],["STAND SIX CUT","80gm",19],["STAND THICK","60gm",14.5],["STAND DHMIAKA","55gm",13],["SIX CUT","42gm",10],["RING STAND","35gm",8.4],["RING STAND","25gm",6],["3PC RING","75gm",18],["MONKEY","1 PC",12],["DUCK","1 PC",10],["RABBIT","1 PC",5],["BOAT","1 PC",8],["BALLON","1 PC",9],["ROSE","1 PC",10]];
+const CATS=["WHITE CANDLE","COLOUR CANDLE","DESIGN CANDLE"],BASIS={"WHITE CANDLE":"WHITE 220/KG","COLOUR CANDLE":"COLOUR 230/KG","DESIGN CANDLE":""};
+let uid=0;const mk=(c,a)=>a.map(x=>({id:++uid,c,n:x[0],w:x[1],p:x[2]}));
+const DEF={products:[...mk(CATS[0],W),...mk(CATS[1],C),...mk(CATS[2],G)],bills:[],settings:{name:"M/S. AKASH CANDLE",addr:"AT/P.O.: MADHUBAN HAT, DIST.: JAJPUR (ODISHA)",phone:"Mob.: 9937499755, 9090943055",prefix:"AC-",defp:0,foot:"Please Visit Us Again."}};
+let mem={};const ST={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return mem[k]||null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){mem[k]=v}}};
+let P=ST.get("ac_products")||DEF.products,B=ST.get("ac_bills")||[],S=Object.assign({},DEF.settings,ST.get("ac_settings")||{});
+uid=Math.max(0,...P.map(p=>p.id));
+const sp=()=>ST.set("ac_products",P),sb=()=>ST.set("ac_bills",B);
+const $=s=>document.querySelector(s),fm=n=>"₹"+Number(n).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2}),r2=n=>Math.round((+n||0)*100+1e-9)/100;
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const lab=p=>p.n+" ("+p.w+")",dmy=d=>d?d.split("-").reverse().join("/"):"";
+function words(n){n=Math.floor(n);if(!n)return"Zero";const o="One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve Thirteen Fourteen Fifteen Sixteen Seventeen Eighteen Nineteen".split(" "),t="_ _ Twenty Thirty Forty Fifty Sixty Seventy Eighty Ninety".split(" ");
+const b=x=>x<20?o[x-1]:t[Math.floor(x/10)]+(x%10?" "+o[x%10-1]:"");const h=x=>(x>=100?o[Math.floor(x/100)-1]+" Hundred"+(x%100?" ":""):"")+(x%100?b(x%100):"");
+let s="";[[1e7,"Crore"],[1e5,"Lakh"],[1e3,"Thousand"]].forEach(([v,nm])=>{if(n>=v){s+=h(Math.floor(n/v))+" "+nm+" ";n%=v}});return(s+(n?h(n):"")).trim()}
+const inWords=t=>{const rs=Math.floor(t),ps=Math.round((t-rs)*100);return"Rupees "+words(rs)+(ps?" and "+words(ps)+" Paise":"")+" Only"};
+
+/* nav */
+const PG=[["dash","Dashboard"],["bill","Create Bill"],["prod","Products"],["price","Price List"],["hist","Previous Bills"],["set","Settings"]];
+$("#nav").innerHTML=PG.map(p=>`<button id="n-${p[0]}" onclick="go('${p[0]}')">${p[1]}</button>`).join("");
+function go(p){document.querySelectorAll(".v").forEach(e=>e.classList.toggle("on",e.id=="v-"+p));PG.forEach(x=>$("#n-"+x[0]).classList.toggle("on",x[0]==p));
+if(p=="dash")dash();if(p=="bill"&&!editId&&!rows.length)newBill();if(p=="prod")renderProd();if(p=="price")renderPrice();if(p=="hist")renderHist();if(p=="set")loadSet();scrollTo(0,0)}
+function dash(){const n=c=>P.filter(p=>p.c==c).length;$("#cards").innerHTML=[["TOTAL PRODUCTS",P.length],["WHITE CANDLES",n(CATS[0])],["COLOUR CANDLES",n(CATS[1])],["DESIGN CANDLES",n(CATS[2])],["TOTAL BILLS",B.length]].map(c=>`<div class="card"><b>${c[1]}</b>${c[0]}</div>`).join("")}
+
+/* billing */
+let rows=[],editId=null;
+const nextNo=()=>{let m=0;B.forEach(b=>{const x=parseInt(String(b.no).replace(/\D/g,""));if(x>m)m=x});return S.prefix+String(m+1).padStart(4,"0")};
+function newBill(){editId=null;rows=[];for(let i=0;i<5;i++)rows.push({cat:"",lab:"",pk:"",rate:"",name:""});$("#bd").value=new Date().toISOString().slice(0,10);$("#bn").value=$("#ba").value="";$("#bno").value=nextNo();$("#disc").value=$("#gst").value=0;$("#mode").textContent="New Bill";drawRows();calc()}
+function opts(c){return P.filter(p=>!c||p.c==c).map(p=>`<option value="${esc(lab(p))}">${esc(p.c.split(" ")[0])} ${p.p.toFixed(2)}</option>`).join("")}
+function drawRows(){$("#bt tbody").innerHTML=rows.map((r,i)=>`<tr><td>${String(i+1).padStart(2,"0")}</td><td><select onchange="rc(${i},this.value)"><option value="">Select Category</option>${CATS.map(c=>`<option ${r.cat==c?"selected":""}>${c}</option>`).join("")}</select>
+<input list="dl${i}" placeholder="Search / select product" value="${esc(r.lab)}" oninput="rp(${i},this.value)"><datalist id="dl${i}">${opts(r.cat)}</datalist></td>
+<td><input type="number" min="0" step="any" inputmode="decimal" value="${r.pk}" oninput="rows[${i}].pk=this.value;ra(${i})"></td>
+<td><input type="number" min="0" step="0.01" inputmode="decimal" id="rt${i}" value="${r.rate}" oninput="rows[${i}].rate=this.value;ra(${i})"></td><td class="r" id="am${i}"></td></tr>`).join("");rows.forEach((_,i)=>ra(i,1));calc()}
+function rc(i,v){rows[i].cat=v;$("#dl"+i).innerHTML=opts(v)}
+function rp(i,v){const r=rows[i];r.lab=v;const p=P.find(p=>lab(p)==v);if(p){r.name=p.n+" "+p.w;r.rate=p.p;$("#rt"+i).value=p.p}else{r.name=v;if(v&&r.rate==="" &&+S.defp){r.rate=S.defp;$("#rt"+i).value=S.defp}}ra(i)}
+const amt=r=>r2((+r.pk||0)*(+r.rate||0));
+function ra(i,q){$("#am"+i).textContent=amt(rows[i])?fm(amt(rows[i])):"";if(!q)calc()}
+function addRow(){if(rows.length>=20)return alert("Maximum 20 rows per bill");rows.push({cat:"",lab:"",pk:"",rate:"",name:""});drawRows()}
+function remRow(){if(rows.length>1){rows.pop();drawRows()}}
+function clearBill(){if(confirm("Clear all items?")){rows=rows.map(()=>({cat:"",lab:"",pk:"",rate:"",name:""}));drawRows()}}
+function calc(){const sub=r2(rows.reduce((s,r)=>s+amt(r),0)),d=r2(sub*(+$("#disc").value||0)/100),g=r2((sub-d)*(+$("#gst").value||0)/100),t=r2(sub-d+g);
+$("#tot").innerHTML=`Subtotal: ${fm(sub)}<br>Discount: −${fm(d)}<br>GST: ${fm(g)}<br>GRAND TOTAL: <big>${fm(t)}</big><br><i>${inWords(t)}</i>`;return{sub,d,g,t}}
+["disc","gst"].forEach(i=>$("#"+i).addEventListener("input",calc));
+function cur(){const c=calc();return{id:editId,no:$("#bno").value.trim(),date:$("#bd").value,name:$("#bn").value.trim(),addr:$("#ba").value.trim(),disc:+$("#disc").value||0,gst:+$("#gst").value||0,sub:c.sub,total:c.t,
+items:rows.filter(r=>r.name&&amt(r)>0||r.name&&r.pk).map(r=>({cat:r.cat,lab:r.lab,name:r.name,pk:+r.pk||0,rate:+r.rate||0,amt:amt(r)}))}}
+function saveBill(){const b=cur();if(!b.items.length)return alert("Add at least one item.");if(!b.no)return alert("Enter a bill number.");
+if(B.some(x=>x.no==b.no&&x.id!=b.id))return alert("Bill number already exists.");
+if(b.id){B=B.map(x=>x.id==b.id?b:x)}else{b.id=Date.now();B.push(b);editId=b.id}sb();$("#mode").textContent="Editing "+b.no;alert("Bill "+b.no+" saved.")}
+
+/* products */
+let editP=null;
+function renderProd(){const q=$("#ps").value.toLowerCase();$("#pt").innerHTML="<tr><th>Category</th><th>Product</th><th>Weight</th><th>Price</th><th>Edit</th><th>Delete</th></tr>"+P.filter(p=>(p.c+p.n+p.w).toLowerCase().includes(q)).map(p=>`<tr><td>${p.c}</td><td>${esc(p.n)}</td><td>${esc(p.w)}</td><td class="r">${fm(p.p)}</td><td><button onclick="editProd(${p.id})">Edit</button></td><td><button class="d" onclick="delProd(${p.id})">Delete</button></td></tr>`).join("")}
+function editProd(id){const p=P.find(x=>x.id==id);editP=id;$("#pc").value=p.c;$("#pn").value=p.n;$("#pw").value=p.w;$("#pp").value=p.p;$("#pft").textContent="Edit Product";scrollTo(0,0)}
+function resetProd(){editP=null;$("#pn").value=$("#pw").value=$("#pp").value="";$("#pft").textContent="Add Product"}
+function saveProd(){const o={c:$("#pc").value,n:$("#pn").value.trim(),w:$("#pw").value.trim(),p:+$("#pp").value};if(!o.n||isNaN(o.p)||$("#pp").value==="")return alert("Enter product name and price.");
+if(editP)P=P.map(p=>p.id==editP?{...p,...o}:p);else P.push({id:++uid,...o});sp();resetProd();renderProd()}
+function delProd(id){if(confirm("Delete this product?")){P=P.filter(p=>p.id!=id);sp();renderProd()}}
+
+/* price list */
+let ptab=0;
+function renderPrice(){$("#ptabs").innerHTML=CATS.map((c,i)=>`<button class="${i==ptab?"p":""}" onclick="ptab=${i};renderPrice()">${c}</button>`).join("");
+$("#plh").textContent=`AKASH CANDEL 2026 — ${CATS[ptab]} & PRICE LIST ${BASIS[CATS[ptab]]?"— "+BASIS[CATS[ptab]]:""}`;
+$("#plt").innerHTML="<tr><th>SL NO.</th><th>SIZE / PRODUCT</th><th>WEIGHT</th><th>PRICE</th></tr>"+P.filter(p=>p.c==CATS[ptab]).map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.n)}</td><td>${esc(p.w)}</td><td class="r">${p.p.toFixed(2)}</td></tr>`).join("")}
+$("#ppr").onclick=()=>{$("#pa").innerHTML=`<div class="sheet" style="color:#000;border:0"><h3 style="text-align:center">${$("#plh").textContent}</h3>${$("#plt").outerHTML}</div>`;$("#pa").querySelectorAll("th,td").forEach(e=>e.style.border="1px solid #000");print()};
+function pricePdf(){const d=new jspdf.jsPDF({unit:"mm",format:"a4"});CATS.forEach((c,k)=>{if(k)d.addPage();d.setFont("times","bold");d.setFontSize(15);d.text("AKASH CANDEL 2026",105,20,{align:"center"});d.text(c.replace("CANDLE","CANDEL")+" & PRICE LIST"+(BASIS[c]?" — "+BASIS[c]+"/KG".replace("/KG/KG","/KG"):""),105,28,{align:"center"});
+let y=36;const X=[15,35,125,160,195];const row=(a,h)=>{d.setFont("times",h?"bold":"normal");d.setFontSize(11);d.rect(15,y,180,8);X.slice(1,4).forEach(x=>d.line(x,y,x,y+8));d.text(a[0],17,y+5.5);d.text(a[1],37,y+5.5);d.text(a[2],127,y+5.5);d.text(a[3],193,y+5.5,{align:"right"});y+=8};
+row(["SL NO.","SIZE / PRODUCT","WEIGHT","PRICE"],1);P.filter(p=>p.c==c).forEach((p,i)=>row([String(i+1),p.n,p.w,p.p.toFixed(2)]))});d.save("AKASH-CANDEL-PRICE-LIST.pdf")}
+
+/* history */
+let vb=null;
+function renderHist(){const q=$("#hs").value.toLowerCase();$("#ht").innerHTML="<tr><th>Bill No.</th><th>Date</th><th>Customer</th><th>Total</th><th>Actions</th></tr>"+[...B].reverse().filter(b=>(b.no+b.name).toLowerCase().includes(q)).map(b=>`<tr><td>${esc(b.no)}</td><td>${dmy(b.date)}</td><td>${esc(b.name)}</td><td class="r">${fm(b.total)}</td><td><div class="row" style="margin:0"><button onclick="viewBill(${b.id})">VIEW</button><button onclick="editBill(${b.id})">EDIT</button><button onclick="pdfBill(B.find(x=>x.id==${b.id}))">DOWNLOAD PDF</button><button class="d" onclick="delBill(${b.id})">DELETE</button></div></td></tr>`).join("")}
+function viewBill(id){vb=B.find(b=>b.id==id);$("#dv").innerHTML=sheet(vb);$("#dlg").showModal()}
+function editBill(id){const b=B.find(x=>x.id==id);editId=id;go("bill");rows=b.items.map(i=>({cat:i.cat||"",lab:i.lab||i.name,name:i.name,pk:i.pk,rate:i.rate}));while(rows.length<5)rows.push({cat:"",lab:"",pk:"",rate:"",name:""});
+$("#bd").value=b.date;$("#bn").value=b.name;$("#ba").value=b.addr;$("#bno").value=b.no;$("#disc").value=b.disc;$("#gst").value=b.gst;$("#mode").textContent="Editing "+b.no;drawRows()}
+function delBill(id){if(confirm("Delete this bill?")){B=B.filter(b=>b.id!=id);sb();renderHist()}}
+
+/* paper-style bill (screen/print) */
+function sheet(b){let r="";for(let i=0;i<20;i++){const it=b.items[i];r+=`<tr><td>${String(i+1).padStart(2,"0")}</td><td>${it?esc(it.name):"&nbsp;"}</td><td style="text-align:right">${it?it.pk:""}</td><td style="text-align:right">${it?it.rate.toFixed(2):""}</td><td style="text-align:right">${it?it.amt.toFixed(2):""}</td></tr>`}
+return`<div class="sheet"><div style="text-align:center"><b style="background:var(--blue);color:#fff;padding:0 6px;font-size:10px">ESTIMATE</b></div><h2>${esc(S.name)}</h2><p><b>${esc(S.addr)}</b></p><p><b>${esc(S.phone)}</b></p>
+<div style="display:flex;gap:10px"><div style="flex:1"><div class="l">Date: ${dmy(b.date)}</div><div class="l">Name: ${esc(b.name)}</div><div class="l">Address: ${esc(b.addr)}</div></div><div style="width:30%" class="l">No.: ${esc(b.no)}</div></div>
+<table style="margin-top:6px;width:100%"><tr><th>Sl No</th><th>PARTICULARS</th><th>PACKET</th><th>RATE</th><th>AMOUNT</th></tr>${r}
+<tr><td colspan="4" style="text-align:right"><b>GRAND TOTAL</b></td><td style="text-align:right"><b>${b.total.toFixed(2)}</b></td></tr></table>
+<p style="text-align:left;margin-top:8px">Rs. <u>${esc(inWords(b.total))}</u> only.</p><div style="display:flex;justify-content:space-between;margin-top:8px"><i><b>${esc(S.foot)}</b></i><b>For ${esc(S.name.toUpperCase())}</b></div><p style="text-align:left"><i><b>Customer's Signature</b></i></p></div>`}
+function printBill(b){if(!b.items.length)return alert("Add items first.");$("#pa").innerHTML=sheet(b);print()}
+
+/* PDF (selectable text, A4 portrait) */
+function pdfBill(b){if(!b||!b.items.length)return alert("Add items first.");const d=new jspdf.jsPDF({unit:"mm",format:"a4"}),bl=[30,74,140];d.setDrawColor(...bl);d.setTextColor(...bl);d.setLineWidth(.4);
+d.roundedRect(10,10,190,277,2,2);d.setFillColor(...bl);d.rect(92,14,26,5,"F");d.setTextColor(255);d.setFont("helvetica","bold");d.setFontSize(8);d.text("ESTIMATE",105,17.7,{align:"center"});
+d.setTextColor(...bl);d.setFontSize(24);d.text(S.name.toUpperCase(),105,29,{align:"center"});d.setFontSize(10);d.text(S.addr,105,36,{align:"center"});d.text(S.phone,105,42,{align:"center"});
+d.setFont("helvetica","normal");d.setFontSize(10);d.setLineDashPattern([.5,.7],0);
+const fl=(t,v,x,y,x2)=>{d.text(t,x,y);d.text(v||"",x+d.getTextWidth(t)+1.5,y-.5);d.line(x+d.getTextWidth(t)+1,y+1,x2,y+1)};
+fl("Date:",dmy(b.date),14,52,100);fl("No.:",b.no,130,52,196);fl("Name:",b.name,14,60,196);fl("Address:",b.addr,14,68,196);d.setLineDashPattern([],0);
+const X=[14,26,122,144,166,196],y0=73,rh=8;d.rect(14,y0,182,rh);d.setFont("helvetica","normal");d.setFontSize(9);
+["Sl No","PARTICULARS","PACKET","RATE","AMOUNT"].forEach((t,i)=>d.text(t,i==1?(X[1]+X[2])/2:(X[i]+X[i+1])/2,y0+5.4,{align:"center"}));
+const yE=y0+rh+20*rh;d.rect(14,y0,182,yE-y0);X.slice(1,5).forEach(x=>d.line(x,y0,x,yE));
+for(let i=0;i<=20;i++)d.line(14,y0+rh*(i+1),196,y0+rh*(i+1));
+for(let i=0;i<20;i++){const y=y0+rh*(i+1)+5.4,it=b.items[i];d.setFontSize(10);d.text(String(i+1).padStart(2,"0"),20,y,{align:"center"});
+if(it){let fs=10;d.setFontSize(fs);while(d.getTextWidth(it.name)>92&&fs>5){fs-=.5;d.setFontSize(fs)}d.text(it.name,X[1]+2,y);d.setFontSize(10);
+d.text(String(it.pk),X[3]-2,y,{align:"right"});d.text(it.rate.toFixed(2),X[4]-2,y,{align:"right"});d.text(it.amt.toFixed(2),X[5]-2,y,{align:"right"})}}
+d.setFont("helvetica","bold");d.setFontSize(10);const yT=yE;d.rect(14,yT,182,10);d.line(X[4],yT,X[4],yT+10);d.text("GRAND TOTAL",X[4]-3,yT+6.5,{align:"right"});d.setFontSize(11);d.text(b.total.toFixed(2),X[5]-2,yT+6.8,{align:"right"});
+d.setFont("helvetica","normal");d.setFontSize(9);if(b.disc||b.gst)d.text(`(Subtotal ${b.sub.toFixed(2)}, Discount ${b.disc}%, GST ${b.gst}%)`,16,yT+6.5);
+d.setFontSize(10);d.text("Rs.",14,yT+19);d.setLineDashPattern([.5,.7],0);d.line(22,yT+20,170,yT+20);d.setLineDashPattern([],0);d.text("only.",172,yT+19);
+d.setFontSize(8.5);d.text(inWords(b.total),24,yT+18.2);
+d.setFont("helvetica","bolditalic");d.setFontSize(10);d.text(S.foot,14,yT+29);d.text("Customer's Signature",14,yT+41);d.setFont("helvetica","bold");d.text("For "+S.name.toUpperCase(),196,yT+41,{align:"right"});
+d.save("AKASH-CANDLE-BILL-"+String(b.no).replace(/[^\w-]/g,"")+".pdf")}
+
+/* settings */
+const sk=[["name","s1"],["addr","s2"],["phone","s3"],["prefix","s4"],["defp","s5"],["foot","s6"]];
+function loadSet(){sk.forEach(([k,i])=>$("#"+i).value=S[k])}
+function saveSet(){sk.forEach(([k,i])=>S[k]=k=="defp"?+$("#"+i).value||0:$("#"+i).value);ST.set("ac_settings",S);alert("Settings saved.")}
+sp();go("dash");
+</script></body></html>
